@@ -32,5 +32,26 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
       - run: npm ci
-      - run: npx turbo run lint typecheck build test
+      - run: npx turbo run build --filter=@turnia/shared
+      - run: npm run db:migrate -w @turnia/api
+      - run: npx turbo run lint typecheck build test --cache-dir=.turbo
+
+  docker:
+    name: Imagen Docker de la API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
