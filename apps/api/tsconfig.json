@@ -1,0 +1,5 @@
+{
+  "extends": "@turnia/config/tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": ".", "declaration": false, "types": ["node"] },
+  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
+}
