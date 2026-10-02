@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function PublicBusinessLayout({ children }: LayoutProps<"/b/[slug]">) {
   return (
@@ -7,6 +8,9 @@ export default function PublicBusinessLayout({ children }: LayoutProps<"/b/[slug
       <header className="flex h-14 items-center justify-between px-5">
         <Link href="/" aria-label="Numerito, inicio">
           <Logo className="text-lg" />
+        </Link>
+        <Link href="/mis-turnos" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          Mis turnos
         </Link>
       </header>
       {children}

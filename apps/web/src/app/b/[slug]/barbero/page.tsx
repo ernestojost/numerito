@@ -76,10 +76,12 @@ export default async function ChooseBarberPage({ params, searchParams }: PagePro
 
       <div className="fixed inset-x-0 bottom-0 border-t border-machine bg-paper px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-[440px]">
-          <span aria-disabled="true" className={buttonVariants({ className: "min-h-12 w-full cursor-not-allowed opacity-60" })}>
+          <Link
+            href={`/b/${slug}/horario?servicio=${service.id}&barbero=${selected}`}
+            className={buttonVariants({ className: "min-h-12 w-full" })}
+          >
             Elegir horario
-          </span>
-          <p className="mt-2 text-center text-[13px] text-muted-ink">La reserva online se habilita en la próxima versión.</p>
+          </Link>
         </div>
       </div>
     </main>
