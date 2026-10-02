@@ -1,29 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Anton, Courier_Prime, Doto, Libre_Barcode_128_Text, Libre_Franklin } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const franklin = Libre_Franklin({ variable: "--font-franklin", subsets: ["latin"] });
+const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });
+const doto = Doto({ variable: "--font-doto", weight: "700", subsets: ["latin"] });
+const courier = Courier_Prime({ variable: "--font-courier", weight: ["400", "700"], subsets: ["latin"] });
+const barcode = Libre_Barcode_128_Text({ variable: "--font-libre-barcode", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Turnia — Turnos online para tu negocio",
-  description: "Reservas online con seña, recordatorios automáticos y agenda para peluquerías, consultorios y negocios locales.",
+  title: "Turnia — Turnos online para barberías",
+  description:
+    "Tu cliente reserva desde tu link, paga la seña por Mercado Pago y recibe un ticket confirmado. Nadie más puede tomar ese horario.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${franklin.variable} ${anton.variable} ${doto.variable} ${courier.variable} ${barcode.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
