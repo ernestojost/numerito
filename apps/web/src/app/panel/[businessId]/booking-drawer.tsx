@@ -86,7 +86,12 @@ export function BookingDrawer({
           {booking.depositCents > 0 && (
             <>
               <br />
-              Seña: {formatMoney(booking.depositCents)} (se cobra en el local por ahora)
+              Seña: {formatMoney(booking.depositCents)}{" "}
+              {booking.payment?.status === "approved"
+                ? "· pagada por Mercado Pago"
+                : booking.status === "pending_payment"
+                  ? "· esperando el pago"
+                  : "· sin pagar"}
             </>
           )}
           <TicketRule />

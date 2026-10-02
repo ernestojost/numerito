@@ -70,6 +70,22 @@ export const BookingSchema = z.object({
   customer: z.object({ id: z.string(), name: z.string(), phone: z.string().nullable() }),
   /** Until when the client can cancel from the app. */
   cancellableUntil: z.string(),
+  /** While the deposit is being paid: when the hold runs out. */
+  expiresAt: z.string().nullable(),
+  /** Latest deposit payment, if any. */
+  payment: z
+    .object({ status: z.enum(["pending", "approved", "rejected", "refunded"]), amountCents: z.number().int() })
+    .nullable(),
   notes: z.string().nullable(),
 });
 export type Booking = z.infer<typeof BookingSchema>;
+
+export const CreateBookingResponseSchema = z.object({
+  booking: BookingSchema,
+  /** Where to pay the deposit; null when the service has no deposit and the booking is already confirmed. */
+  checkoutUrl: z.string().nullable(),
+});
+export type CreateBookingResponse = z.infer<typeof CreateBookingResponseSchema>;
+
+/** Sent when the client comes back from the payment page, to confirm without waiting for the webhook. */
+export const PaymentReturnSchema = z.object({ paymentId: z.string().min(1) });

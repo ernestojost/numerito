@@ -8,6 +8,7 @@ import {
   businesses,
   customers,
   organization,
+  payments,
   services,
   staff,
 } from "../../db/schema/index.js";
@@ -105,6 +106,9 @@ export function bookingsService(db: Db) {
         .returning({ id: customers.id });
 
       const { service, business: settings } = availability;
+      const depositCents = effectiveDeposit(service.priceCents, service.depositCents, settings.depositType, settings.depositValue);
+      // With a deposit the slot is held while the client pays; without one it's confirmed right away.
+      const needsDeposit = depositCents > 0;
       const bookingId = await insertFirstFree(tx, await orderByLoad(tx, slot.staffIds, date, business.timezone), {
         businessId: business.id,
         serviceId: service.id,
@@ -112,10 +116,10 @@ export function bookingsService(db: Db) {
         startsAt,
         endsAt: new Date(startsAt.getTime() + service.durationMinutes * MINUTE),
         blocksUntil: new Date(startsAt.getTime() + (service.durationMinutes + service.bufferMinutes) * MINUTE),
-        // Deposits are collected in the payments phase; until then online bookings are confirmed directly.
-        status: "confirmed",
+        status: needsDeposit ? "pending_payment" : "confirmed",
+        expiresAt: needsDeposit ? new Date(now.getTime() + settings.holdMinutes * MINUTE) : null,
         priceCents: service.priceCents,
-        depositCents: effectiveDeposit(service.priceCents, service.depositCents, settings.depositType, settings.depositValue),
+        depositCents,
         source: "online",
         createdBy: userId,
       });
@@ -194,8 +198,22 @@ export function bookingsService(db: Db) {
   }
 
   type Row = Awaited<ReturnType<ReturnType<typeof baseQuery>["execute"]>>[number];
+  type LatestPayment = Booking["payment"];
 
-  function toBooking(r: Row): Booking {
+  /** Attaches the latest payment of each booking. */
+  async function hydrate(rows: Row[]): Promise<Booking[]> {
+    if (rows.length === 0) return [];
+    const list = await db
+      .select({ bookingId: payments.bookingId, status: payments.status, amountCents: payments.amountCents })
+      .from(payments)
+      .where(inArray(payments.bookingId, rows.map((r) => r.b.id)))
+      .orderBy(asc(payments.createdAt));
+    const latest = new Map<string, LatestPayment>();
+    for (const p of list) latest.set(p.bookingId, { status: p.status, amountCents: p.amountCents });
+    return rows.map((r) => toBooking(r, latest.get(r.b.id) ?? null));
+  }
+
+  function toBooking(r: Row, payment: LatestPayment): Booking {
     return {
       id: r.b.id,
       number: `T-${String(r.b.number).padStart(4, "0")}`,
@@ -210,6 +228,8 @@ export function bookingsService(db: Db) {
       staff: { id: r.b.staffId, displayName: r.staffName },
       customer: { id: r.b.customerId, name: r.customerName, phone: r.customerPhone },
       cancellableUntil: new Date(r.b.startsAt.getTime() - r.cancellationWindowHours * HOUR).toISOString(),
+      expiresAt: r.b.expiresAt?.toISOString() ?? null,
+      payment,
       notes: r.b.notes,
     };
   }
@@ -217,19 +237,19 @@ export function bookingsService(db: Db) {
   async function getById(id: string) {
     const [row] = await baseQuery().where(eq(bookings.id, id)).limit(1);
     if (!row) throw notFound("Turno no encontrado");
-    return toBooking(row);
+    return (await hydrate([row]))[0]!;
   }
 
   async function listForUser(userId: string) {
     const rows = await baseQuery().where(eq(customers.userId, userId)).orderBy(desc(bookings.startsAt)).limit(100);
-    return rows.map(toBooking);
+    return hydrate(rows);
   }
 
   async function listForBusiness(businessId: string, from: Date, to: Date) {
     const rows = await baseQuery()
       .where(and(eq(bookings.businessId, businessId), lt(bookings.startsAt, to), gte(bookings.endsAt, from)))
       .orderBy(asc(bookings.startsAt));
-    return rows.map(toBooking);
+    return hydrate(rows);
   }
 
   async function cancelByClient(userId: string, bookingId: string, now = new Date()) {
@@ -237,7 +257,8 @@ export function bookingsService(db: Db) {
       .where(and(eq(bookings.id, bookingId), eq(customers.userId, userId)))
       .limit(1);
     if (!row) throw notFound("Turno no encontrado");
-    const booking = toBooking(row);
+    const [booking] = await hydrate([row]);
+    if (!booking) throw notFound("Turno no encontrado");
 
     if (booking.status !== "confirmed" && booking.status !== "pending_payment") {
       throw new AppError(409, "NOT_CANCELLABLE", "Este turno ya no se puede cancelar");
@@ -279,7 +300,18 @@ export function bookingsService(db: Db) {
     return getById(bookingId);
   }
 
-  return { createOnline, createManual, getById, listForUser, listForBusiness, cancelByClient, changeStatus };
+  /** Marks every hold whose payment window has passed as expired (run periodically). */
+  async function expireHolds(now = new Date()) {
+    const expired = await db
+      .update(bookings)
+      .set({ status: "expired" })
+      .where(and(eq(bookings.status, "pending_payment"), lt(bookings.expiresAt, now)))
+      .returning({ id: bookings.id });
+    if (expired.length) await db.insert(bookingEvents).values(expired.map((b) => ({ bookingId: b.id, type: "hold_expired" })));
+    return expired.length;
+  }
+
+  return { createOnline, createManual, getById, listForUser, listForBusiness, cancelByClient, changeStatus, expireHolds };
 }
 
 /** For tests: raw count of live bookings of a barber at an instant. */
