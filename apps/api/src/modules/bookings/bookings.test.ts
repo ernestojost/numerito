@@ -168,6 +168,16 @@ describe("the business side", () => {
     expect(again.status).toBe(409);
   });
 
+  it("offers short-notice slots to the business but not to the public", async () => {
+    const today = localDate(new Date(), TZ);
+    const query = { serviceId, date: today, staffId: julio };
+    const publicSlots = (await request(app).get(`/api/v1/public/businesses/${business.slug}/availability`).query(query)).body.slots;
+    const panelSlots = (await owner.get(`/api/v1/businesses/${business.id}/availability`).query(query)).body.slots;
+    const soon = Date.now() + 60 * 60_000;
+    expect(publicSlots.every((s: { startsAt: string }) => new Date(s.startsAt).getTime() >= soon)).toBe(true);
+    expect(panelSlots.length).toBeGreaterThanOrEqual(publicSlots.length);
+  });
+
   it("shows the client their bookings", async () => {
     const mine = (await client.get("/api/v1/me/bookings")).body as Booking[];
     expect(mine.length).toBeGreaterThanOrEqual(5);

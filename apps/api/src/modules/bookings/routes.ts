@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { CreateBookingSchema, ManualBookingSchema, StatusChangeSchema } from "@numerito/shared";
+import { AvailabilityQuerySchema, CreateBookingSchema, ManualBookingSchema, StatusChangeSchema } from "@numerito/shared";
 import type { Db } from "../../db/client.js";
 import { AppError } from "../../lib/errors.js";
 import { currentUser, requireAuth } from "../../middleware/requireAuth.js";
 import { currentBusinessId, requireBusinessRole } from "../../middleware/requireBusinessRole.js";
 import { validateBody } from "../../middleware/validate.js";
+import { computeAvailability } from "../availability/service.js";
 import { bookingsService } from "./service.js";
 
 const RangeQuerySchema = z.object({ from: z.iso.datetime({ offset: true }), to: z.iso.datetime({ offset: true }) });
@@ -34,6 +35,18 @@ export function clientBookingsRouter(db: Db) {
     res.json(await service.cancelByClient(currentUser(req).id, String(req.params.bookingId)));
   });
 
+  return router;
+}
+
+/** Free slots for a manual booking: like the public one, but bookable at short notice. Mounted at /businesses/:businessId. */
+export function businessAvailabilityRouter(db: Db) {
+  const router = Router({ mergeParams: true });
+  router.get("/availability", requireAuth, requireBusinessRole(db, "owner", "admin", "member"), async (req, res) => {
+    const query = AvailabilityQuerySchema.safeParse(req.query);
+    if (!query.success) throw new AppError(400, "VALIDATION_ERROR", "Indica serviceId y date (AAAA-MM-DD)");
+    const { slots } = await computeAvailability(db, { businessId: currentBusinessId(req), ...query.data, ignoreLeadTime: true });
+    res.json({ date: query.data.date, slots });
+  });
   return router;
 }
 
