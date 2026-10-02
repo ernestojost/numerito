@@ -10,6 +10,10 @@ import { logger } from "./lib/logger.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { businessesRouter } from "./modules/businesses/routes.js";
 import { type DbCheck, healthRouter } from "./modules/health/routes.js";
+import { publicRouter } from "./modules/public/routes.js";
+import { schedulesRouter } from "./modules/schedules/routes.js";
+import { servicesRouter } from "./modules/services/routes.js";
+import { staffRouter } from "./modules/staff/routes.js";
 
 export interface AppDeps {
   checkDb: DbCheck;
@@ -33,6 +37,10 @@ export function createApp({ checkDb, db = defaultDb }: AppDeps) {
   // /health for the platform health check, /api/health for the web app (through the Next rewrite)
   app.use(["/health", "/api/health"], healthRouter(checkDb));
   app.use("/api/v1", businessesRouter(db));
+  app.use("/api/v1/businesses/:businessId/services", servicesRouter(db));
+  app.use("/api/v1/businesses/:businessId/staff", staffRouter(db));
+  app.use("/api/v1/businesses/:businessId", schedulesRouter(db));
+  app.use("/api/v1/public", publicRouter(db));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

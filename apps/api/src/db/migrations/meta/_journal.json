@@ -15,6 +15,13 @@
       "when": 1790909767503,
       "tag": "0001_auth_and_businesses",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790918118272,
+      "tag": "0002_catalog",
+      "breakpoints": true
     }
   ]
 }
