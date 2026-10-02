@@ -4,6 +4,8 @@
  */
 import { eq } from "drizzle-orm";
 import { auth } from "../auth/index.js";
+import { computeAvailability, localDate } from "../modules/availability/service.js";
+import { bookingsService } from "../modules/bookings/service.js";
 import { businessService } from "../modules/businesses/service.js";
 import { schedulesService } from "../modules/schedules/service.js";
 import { servicesService } from "../modules/services/service.js";
@@ -66,8 +68,9 @@ const perfilado = await services.create(business.id, {
 
 const staff = staffService(db);
 const all = [corte.id, corteBarba.id, perfilado.id];
-await staff.create(business.id, { displayName: "Julio", email: null, active: true, serviceIds: all });
+const { id: julioId } = await staff.create(business.id, { displayName: "Julio", email: null, active: true, serviceIds: all });
 const marcos = await staff.create(business.id, { displayName: "Marcos", email: null, active: true, serviceIds: all });
+const marcosId = marcos.id;
 const sofi = await staff.create(business.id, { displayName: "Sofi", email: null, active: true, serviceIds: [corte.id] });
 
 const schedules = schedulesService(db);
@@ -92,6 +95,33 @@ await schedules.setStaffSchedule(business.id, sofi.id, [
   ]),
 ]);
 
-console.log(`Listo: ${DEMO.name} en /b/${DEMO.slug}`);
+// Example bookings for today and tomorrow, so the demo agenda isn't empty.
+const bookingsApi = bookingsService(db);
+const clients = ["Nico", "Dani", "Leo", "Fede", "Caro", "Juli"];
+let made = 0;
+for (const offset of [0, 1]) {
+  const date = localDate(new Date(Date.now() + offset * 86_400_000), "America/Argentina/Buenos_Aires");
+  for (const [index, member] of [marcosId, julioId, sofi.id].entries()) {
+    const service = member === sofi.id ? corte : [corteBarba, corte, perfilado][index % 3]!;
+    const { slots } = await computeAvailability(db, { businessId: business.id, serviceId: service.id, date, staffId: member, ignoreLeadTime: true });
+    // Two or three bookings per barber, spread over the day.
+    for (const slot of [slots[1], slots[Math.floor(slots.length / 2)], slots.at(-3)].filter(Boolean)) {
+      try {
+        await bookingsApi.createManual(business.id, owner.id, {
+          serviceId: service.id,
+          staffId: member,
+          startsAt: slot!.startsAt,
+          customer: { name: clients[made % clients.length]!, phone: null },
+          notes: "Turno de ejemplo",
+        });
+        made++;
+      } catch {
+        // Overlaps with one created a moment ago: skip it.
+      }
+    }
+  }
+}
+
+console.log(`Listo: ${DEMO.name} en /b/${DEMO.slug} (${made} turnos de ejemplo)`);
 console.log(`Panel: ${DEMO.owner.email} / ${DEMO.owner.password}`);
 await sql.end();
