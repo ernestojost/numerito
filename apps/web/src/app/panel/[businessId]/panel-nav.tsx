@@ -22,7 +22,7 @@ export function PanelNav({ businessId, variant }: { businessId: string; variant:
   return (
     <nav
       aria-label="Panel"
-      className={variant === "sidebar" ? "mt-5 hidden flex-col lg:flex" : "flex gap-1 overflow-x-auto px-3 lg:hidden"}
+      className={variant === "sidebar" ? "mt-5 hidden flex-col lg:flex" : "flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] lg:hidden"}
     >
       {items.map((item) => {
         const href = `${base}${item.href}`;

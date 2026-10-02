@@ -8,7 +8,7 @@ import { env } from "./config/env.js";
 import { db as defaultDb, type Db } from "./db/client.js";
 import { logger } from "./lib/logger.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
-import { businessBookingsRouter, clientBookingsRouter } from "./modules/bookings/routes.js";
+import { businessAvailabilityRouter, businessBookingsRouter, clientBookingsRouter } from "./modules/bookings/routes.js";
 import { businessesRouter } from "./modules/businesses/routes.js";
 import { type DbCheck, healthRouter } from "./modules/health/routes.js";
 import { publicRouter } from "./modules/public/routes.js";
@@ -42,6 +42,7 @@ export function createApp({ checkDb, db = defaultDb }: AppDeps) {
   app.use("/api/v1/businesses/:businessId/staff", staffRouter(db));
   app.use("/api/v1/businesses/:businessId/bookings", businessBookingsRouter(db));
   app.use("/api/v1/businesses/:businessId", schedulesRouter(db));
+  app.use("/api/v1/businesses/:businessId", businessAvailabilityRouter(db));
   app.use("/api/v1/public", publicRouter(db));
   app.use("/api/v1", clientBookingsRouter(db));
 
