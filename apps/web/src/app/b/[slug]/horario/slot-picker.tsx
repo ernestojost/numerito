@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import type { Booking, Slot } from "@numerito/shared";
+import type { CreateBookingResponse, Slot } from "@numerito/shared";
 import { Stamp } from "@/components/brand/stamp";
 import { Ticket } from "@/components/brand/ticket";
 import { Button } from "@/components/ui/button";
@@ -49,11 +49,13 @@ export function SlotPicker({
     setSubmitting(true);
     setError(null);
     try {
-      const booking = await api<Booking>("/bookings", {
+      const { booking, checkoutUrl } = await api<CreateBookingResponse>("/bookings", {
         method: "POST",
         body: { businessSlug, serviceId: service.id, staffId, startsAt: selected },
       });
-      router.push(`/mis-turnos/${booking.id}?nuevo=1`);
+      // With a deposit the slot is now held: off to pay (Mercado Pago or the simulated checkout).
+      if (checkoutUrl) window.location.assign(checkoutUrl);
+      else router.push(`/mis-turnos/${booking.id}?nuevo=1`);
     } catch (err) {
       if (err instanceof ApiRequestError && err.status === 401) {
         // Keep the chosen time in the URL so the client comes back to it after signing in.
@@ -143,11 +145,11 @@ export function SlotPicker({
             </p>
           )}
           <Button className="min-h-12 w-full" disabled={!selected || submitting} onClick={() => void confirm()}>
-            {submitting ? "Reservando…" : "Confirmar turno"}
+            {submitting ? "Reservando…" : service.depositCents > 0 ? "Retener y pagar seña" : "Confirmar turno"}
           </Button>
           {service.depositCents > 0 && (
             <p className="text-center text-[13px] text-muted-ink">
-              Seña de {formatMoney(service.depositCents)}: por ahora se paga en el local.
+              Seña de {formatMoney(service.depositCents)} por Mercado Pago. El horario queda retenido 10 minutos mientras pagas.
             </p>
           )}
         </div>

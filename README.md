@@ -2,7 +2,7 @@
 
 Plataforma de turnos online para negocios locales: reservas 24/7, seña con Mercado Pago, recordatorios automáticos y agenda para el negocio.
 
-> Estado: **Fase 3** — reserva online de punta a punta sin doble reserva, "Mis turnos" y agenda del panel. Próximo: seña con Mercado Pago.
+> Estado: **Fase 4** — reserva online con seña por Mercado Pago, retención de 10 minutos, "Mis turnos" y agenda del panel. Próximo: emails y recordatorios.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Plataforma de turnos online para negocios locales: reservas 24/7, seña con Merc
 | API | Express 5, TypeScript, zod |
 | Base de datos | PostgreSQL 16, Drizzle ORM |
 | Auth | Better Auth (organizaciones = barberías) |
-| Pagos | Mercado Pago *(fase 4)* |
+| Pagos | Mercado Pago Checkout Pro (con checkout simulado para desarrollo) |
 | Jobs y notificaciones | Inngest, Resend *(fase 5)* |
 | Tests | Vitest, Supertest, Playwright |
 | Infra | Docker, GitHub Actions, Vercel, Render, Neon |
@@ -48,6 +48,15 @@ Cuenta demo del panel (la crea el seed): `demo@numerito.app` / `demo-numerito`.
 - Web: http://localhost:3000
 - API: http://localhost:4000/health
 - Mailpit (emails locales): http://localhost:8025
+
+## Pagos
+
+La seña se cobra con **Mercado Pago Checkout Pro**. Al reservar un servicio con seña, el turno queda retenido 10 minutos (`pending_payment`) y el cliente va al checkout; el turno se confirma cuando el pago se acredita.
+
+- **Sin credenciales** (por defecto en desarrollo) se usa un **checkout simulado**: una página propia con "aprobar" y "rechazar" que recorre el mismo flujo, sin cobrar nada. En producción solo se permite con `ALLOW_SIMULATED_PAYMENTS=true`.
+- **Con Mercado Pago**: completar `MP_ACCESS_TOKEN` (usar el de prueba, `TEST-…`) y `MP_WEBHOOK_SECRET` en `apps/api/.env`.
+- El pago se confirma por dos caminos que terminan en la misma función idempotente: el **webhook** (`POST /api/v1/webhooks/mercadopago`, firma `x-signature` verificada) y la **vuelta del checkout**, que consulta el pago a la API. Así funciona en local sin túnel; para probar el webhook, exponer la API (por ejemplo `cloudflared tunnel --url http://localhost:4000`) y poner esa URL en `PUBLIC_API_URL`.
+- Las retenciones vencidas se liberan solas (barrido cada minuto y al reservar). Si alguien paga tarde y el horario sigue libre, se confirma; si ya lo tomó otro, el turno queda vencido y se registra para devolver la seña.
 
 ## Scripts
 

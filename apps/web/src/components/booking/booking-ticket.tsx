@@ -21,6 +21,14 @@ export function BookingTicket({ booking, printing }: { booking: Booking; printin
       Barbero: {booking.staff.displayName}
       <br />
       Precio: {formatMoney(booking.priceCents)}
+      {booking.depositCents > 0 && booking.payment?.status === "approved" && (
+        <>
+          <br />
+          Seña: {formatMoney(booking.depositCents)} · pagada ✓
+          <br />
+          Resto: {formatMoney(booking.priceCents - booking.depositCents)} en el local
+        </>
+      )}
       <TicketRule />
       {live ? (
         <>
