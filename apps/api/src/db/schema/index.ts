@@ -1,2 +1,2 @@
-// Domain tables live here, one file per module.
-export {};
+export * from "./auth.js";
+export * from "./businesses.js";
