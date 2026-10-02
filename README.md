@@ -2,7 +2,7 @@
 
 Plataforma de turnos online para negocios locales: reservas 24/7, seña con Mercado Pago, recordatorios automáticos y agenda para el negocio.
 
-> Estado: **Fase 2** — landing, cuentas, panel con servicios, barberos, horarios y bloqueos, y página pública de la barbería. Próximo: disponibilidad y reserva.
+> Estado: **Fase 3** — reserva online de punta a punta sin doble reserva, "Mis turnos" y agenda del panel. Próximo: seña con Mercado Pago.
 
 ## Stack
 

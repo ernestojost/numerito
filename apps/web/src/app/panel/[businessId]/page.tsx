@@ -1,52 +1,71 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { Dispenser } from "@/components/brand/dispenser";
-import { Led } from "@/components/brand/led";
-import { Ticket } from "@/components/brand/ticket";
-import { getMyBusinesses } from "@/lib/server-api";
-import { CopyLinkButton } from "./copy-link-button";
+import { TZDate } from "@date-fns/tz";
+import type { Booking, Service, Staff, TimeRange } from "@numerito/shared";
+import { getBusiness, serverJson } from "@/lib/server-api";
+import { AgendaBoard, type AgendaColumn } from "./agenda-board";
 
 export const metadata: Metadata = { title: "Agenda · Numerito" };
 
-export default async function AgendaPage({ params }: PageProps<"/panel/[businessId]">) {
-  const { businessId } = await params;
-  const business = (await getMyBusinesses()).find((b) => b.id === businessId);
-  if (!business) return null;
-
-  const today = new Intl.DateTimeFormat("es", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: business.timezone,
-  }).format(new Date());
-
-  return (
-    <main className="px-5 py-6 lg:px-10">
-      <div className="flex flex-wrap items-center gap-4">
-        <h1 className="font-display text-[32px] leading-none uppercase">Agenda</h1>
-        <span className="font-bold first-letter:uppercase">{today}</span>
-      </div>
-
-      <div className="mt-6 flex max-w-md flex-col gap-4">
-        <Led off>SIN TURNOS HOY</Led>
-        <div className="mt-10 flex flex-col items-center">
-          <Dispenser className="h-[72px] w-[240px]" />
-          <Ticket tear="bottom" className="-mt-1 w-[220px] px-[18px] pt-[22px] pb-[26px] text-center">
-            <b className="block font-display text-xl uppercase">Sin turnos hoy</b>
-            <span className="text-[13px] text-muted-ink">
-              Pronto vas a poder cargar servicios, barberos y horarios para abrir tu agenda.
-            </span>
-          </Ticket>
-        </div>
-        <CopyLinkButton url={`${await publicOrigin()}/b/${business.slug}`} />
-      </div>
-    </main>
-  );
+function zoned(date: string, time: string, timeZone: string) {
+  const [y, m, d] = date.split("-").map(Number);
+  const [hh, mm] = time.split(":").map(Number);
+  return new TZDate(y!, m! - 1, d!, hh!, mm!, timeZone);
 }
 
-async function publicOrigin() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
+function shiftDate(date: string, days: number) {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y!, m! - 1, d! + days)).toISOString().slice(0, 10);
+}
+
+const weekdayOf = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+
+export default async function AgendaPage({ params, searchParams }: PageProps<"/panel/[businessId]">) {
+  const { businessId } = await params;
+  const query = await searchParams;
+  const business = await getBusiness(businessId);
+  if (!business) return null;
+
+  const tz = business.timezone;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+  const date = typeof query.fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(query.fecha) ? query.fecha : today;
+  const from = zoned(date, "00:00", tz).toISOString();
+  const to = zoned(shiftDate(date, 1), "00:00", tz).toISOString();
+
+  const [staff, services, hours, bookings] = await Promise.all([
+    serverJson<Staff[]>(`/businesses/${businessId}/staff`),
+    serverJson<Service[]>(`/businesses/${businessId}/services`),
+    serverJson<TimeRange[]>(`/businesses/${businessId}/hours`),
+    serverJson<Booking[]>(`/businesses/${businessId}/bookings?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  ]);
+
+  const weekday = weekdayOf(date);
+  const businessDay = (hours ?? []).filter((h) => h.weekday === weekday);
+  const activeStaff = (staff ?? []).filter((s) => s.active);
+  const columns: AgendaColumn[] = await Promise.all(
+    activeStaff.map(async (member) => {
+      const own = member.usesBusinessHours
+        ? []
+        : ((await serverJson<TimeRange[]>(`/businesses/${businessId}/staff/${member.id}/schedule`)) ?? []);
+      const working = (own.length ? own : businessDay).filter((r) => r.weekday === weekday);
+      return {
+        id: member.id,
+        name: member.displayName,
+        working: working.map((r) => ({ start: r.start, end: r.end })),
+      };
+    }),
+  );
+
+  return (
+    <AgendaBoard
+      businessId={businessId}
+      timezone={tz}
+      date={date}
+      today={today}
+      prevDate={shiftDate(date, -1)}
+      nextDate={shiftDate(date, 1)}
+      columns={columns}
+      bookings={bookings ?? []}
+      services={(services ?? []).filter((s) => s.active)}
+    />
+  );
 }
