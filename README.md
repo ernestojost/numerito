@@ -1,4 +1,4 @@
-# Turnia
+# Numerito
 
 Plataforma de turnos online para negocios locales: reservas 24/7, seña con Mercado Pago, recordatorios automáticos y agenda para el negocio.
 
@@ -38,7 +38,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 
 npm run db:up                       # Postgres + Mailpit
-npm run db:migrate -w @turnia/api   # aplica migraciones
+npm run db:migrate -w @numerito/api   # aplica migraciones
 npm run dev                         # web en :3000, api en :4000
 ```
 
@@ -54,7 +54,7 @@ npm run dev                         # web en :3000, api en :4000
 | `npm run build` | Build de todos los paquetes |
 | `npm run lint` / `npm run typecheck` | Calidad de código |
 | `npm test` | Tests de todos los paquetes |
-| `npm run db:generate -w @turnia/api` | Genera una migración a partir del schema |
+| `npm run db:generate -w @numerito/api` | Genera una migración a partir del schema |
 
 ## Decisiones técnicas destacadas
 

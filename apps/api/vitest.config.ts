@@ -6,7 +6,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     env: {
       NODE_ENV: "test",
-      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://turnia:turnia@localhost:5432/turnia",
+      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://numerito:numerito@localhost:5432/numerito",
     },
   },
 });

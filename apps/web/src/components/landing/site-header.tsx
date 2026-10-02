@@ -12,7 +12,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-machine bg-paper/95 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-[1296px] items-center justify-between px-5 lg:h-[88px] lg:px-0">
-        <Link href="/" aria-label="Turnia, inicio">
+        <Link href="/" aria-label="Numerito, inicio">
           <Logo className="text-2xl lg:text-[30px]" />
         </Link>
         <nav aria-label="Secciones" className="eyebrow hidden gap-8 lg:flex">

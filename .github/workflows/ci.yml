@@ -17,15 +17,15 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: turnia
-          POSTGRES_PASSWORD: turnia
-          POSTGRES_DB: turnia
+          POSTGRES_USER: numerito
+          POSTGRES_PASSWORD: numerito
+          POSTGRES_DB: numerito
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U turnia"
+          --health-cmd "pg_isready -U numerito"
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
-      DATABASE_URL: postgres://turnia:turnia@localhost:5432/turnia
+      DATABASE_URL: postgres://numerito:numerito@localhost:5432/numerito
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,8 +38,8 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
       - run: npm ci
-      - run: npx turbo run build --filter=@turnia/shared
-      - run: npm run db:migrate -w @turnia/api
+      - run: npx turbo run build --filter=@numerito/shared
+      - run: npm run db:migrate -w @numerito/api
       - run: npx turbo run lint typecheck build test --cache-dir=.turbo
 
   docker:

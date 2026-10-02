@@ -9,7 +9,7 @@ const courier = Courier_Prime({ variable: "--font-courier", weight: ["400", "700
 const barcode = Libre_Barcode_128_Text({ variable: "--font-libre-barcode", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Turnia — Turnos online para barberías",
+  title: "Numerito — Turnos online para barberías",
   description:
     "Tu cliente reserva desde tu link, paga la seña por Mercado Pago y recibe un ticket confirmado. Nadie más puede tomar ese horario.",
 };
