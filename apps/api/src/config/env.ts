@@ -6,6 +6,10 @@ const EnvSchema = z.object({
   DATABASE_URL: z.url(),
   WEB_ORIGIN: z.url().default("http://localhost:3000"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.url(),
+  GOOGLE_CLIENT_ID: z.string().optional().transform((v) => v || undefined),
+  GOOGLE_CLIENT_SECRET: z.string().optional().transform((v) => v || undefined),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
