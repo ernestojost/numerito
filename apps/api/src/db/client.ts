@@ -3,6 +3,6 @@ import postgres from "postgres";
 import { env } from "../config/env.js";
 import * as schema from "./schema/index.js";
 
-export const sql = postgres(env.DATABASE_URL, { max: 10 });
+export const sql = postgres(env.DATABASE_URL, { max: 10, onnotice: () => {} });
 export const db = drizzle(sql, { schema, casing: "snake_case" });
 export type Db = typeof db;
