@@ -3,3 +3,4 @@ export * from "./schemas/health.js";
 export * from "./schemas/error.js";
 export * from "./schemas/business.js";
 export * from "./schemas/catalog.js";
+export * from "./schedule-status.js";
