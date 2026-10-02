@@ -107,7 +107,8 @@ export const PublicBusinessSchema = z.object({
   slug: z.string(),
   timezone: z.string(),
   hours: z.array(TimeRangeSchema),
-  services: z.array(ServiceSchema.omit({ active: true })),
+  // depositCents is the amount the client actually pays (own, fixed or percentage), never null here.
+  services: z.array(ServiceSchema.omit({ active: true }).extend({ depositCents: z.number().int() })),
   staff: z.array(z.object({ id: z.string(), displayName: z.string(), serviceIds: z.array(z.string()) })),
   depositCents: z.number().int(),
 });
