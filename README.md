@@ -2,7 +2,7 @@
 
 Plataforma de turnos online para negocios locales: reservas 24/7, seña con Mercado Pago, recordatorios automáticos y agenda para el negocio.
 
-> Estado: **Fase 1** — landing, cuentas (email y Google) y alta de la barbería. Próximo: servicios, barberos y horarios.
+> Estado: **Fase 2** — landing, cuentas, panel con servicios, barberos, horarios y bloqueos, y página pública de la barbería. Próximo: disponibilidad y reserva.
 
 ## Stack
 
@@ -39,8 +39,11 @@ cp apps/web/.env.example apps/web/.env.local
 
 npm run db:up                       # Postgres + Mailpit
 npm run db:migrate -w @numerito/api   # aplica migraciones
+npm run db:seed                     # barbería demo en /b/don-julio
 npm run dev                         # web en :3000, api en :4000
 ```
+
+Cuenta demo del panel (la crea el seed): `demo@numerito.app` / `demo-numerito`.
 
 - Web: http://localhost:3000
 - API: http://localhost:4000/health
@@ -55,6 +58,7 @@ npm run dev                         # web en :3000, api en :4000
 | `npm run lint` / `npm run typecheck` | Calidad de código |
 | `npm test` | Tests de todos los paquetes |
 | `npm run db:generate -w @numerito/api` | Genera una migración a partir del schema |
+| `npm run db:seed` | Crea la barbería demo (`--reset` para recrearla) |
 
 ## Decisiones técnicas destacadas
 
