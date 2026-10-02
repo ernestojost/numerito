@@ -29,8 +29,11 @@ const availability = async (staffId?: string) => {
   return res.body as Availability;
 };
 const startsOf = (a: Availability) => a.slots.map((s) => s.startsAt);
-const book = (agent: Agent, startsAt: string, staffId: string | null) =>
-  agent.post("/api/v1/bookings").set("Origin", ORIGIN).send({ businessSlug: business.slug, serviceId, staffId, startsAt });
+/** No deposit on this service: bookings are confirmed right away (deposits are covered in payments.test.ts). */
+const book = async (agent: Agent, startsAt: string, staffId: string | null) => {
+  const res = await agent.post("/api/v1/bookings").set("Origin", ORIGIN).send({ businessSlug: business.slug, serviceId, staffId, startsAt });
+  return Object.assign(res, { booking: res.body?.booking as Booking });
+};
 
 beforeAll(async () => {
   ({ agent: owner } = await signUp(app, "Julio"));
@@ -42,7 +45,7 @@ beforeAll(async () => {
     await owner
       .post(`${base}/services`)
       .set("Origin", ORIGIN)
-      .send({ name: "Corte", durationMinutes: 30, bufferMinutes: 10, priceCents: 600000 })
+      .send({ name: "Corte", durationMinutes: 30, bufferMinutes: 10, priceCents: 600000, depositCents: 0 })
   ).body.id;
   julio = (await owner.post(`${base}/staff`).set("Origin", ORIGIN).send({ displayName: "Julio", serviceIds: [serviceId] })).body.id;
   marcos = (await owner.post(`${base}/staff`).set("Origin", ORIGIN).send({ displayName: "Marcos", serviceIds: [serviceId] })).body.id;
@@ -82,8 +85,9 @@ describe("booking a slot", () => {
   it("books it and blocks the time plus the cleanup buffer", async () => {
     const res = await book(client, at("09:00"), julio);
     expect(res.status).toBe(201);
-    const booking = res.body as Booking;
-    expect(booking).toMatchObject({ status: "confirmed", staff: { id: julio }, customer: { name: "Nico" }, depositCents: 300000 });
+    expect(res.body.checkoutUrl).toBeNull();
+    const booking = res.booking;
+    expect(booking).toMatchObject({ status: "confirmed", staff: { id: julio }, customer: { name: "Nico" }, depositCents: 0 });
     expect(booking.number).toMatch(/^T-\d{4,}$/);
 
     const julioStarts = startsOf(await availability(julio));
@@ -116,7 +120,7 @@ describe("booking a slot", () => {
     const slot = at("11:00");
     const [a, b] = await Promise.all([book(client, slot, null), book(client, slot, null)]);
     expect([a.status, b.status]).toEqual([201, 201]);
-    expect(new Set([a.body.staff.id, b.body.staff.id])).toEqual(new Set([julio, marcos]));
+    expect(new Set([a.booking.staff.id, b.booking.staff.id])).toEqual(new Set([julio, marcos]));
 
     expect((await book(client, slot, null)).status).toBe(409);
   });
@@ -124,7 +128,7 @@ describe("booking a slot", () => {
 
 describe("cancelling", () => {
   it("frees the slot when the client cancels in time", async () => {
-    const created = (await book(client, at("16:00"), julio)).body as Booking;
+    const created = (await book(client, at("16:00"), julio)).booking;
     const res = await client.post(`/api/v1/me/bookings/${created.id}/cancel`).set("Origin", ORIGIN);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("cancelled_by_client");
@@ -132,7 +136,7 @@ describe("cancelling", () => {
   });
 
   it("refuses to cancel after the cancellation window", async () => {
-    const created = (await book(client, at("17:00"), julio)).body as Booking;
+    const created = (await book(client, at("17:00"), julio)).booking;
     const { user } = (await client.get("/api/auth/get-session")).body;
     const oneHourBefore = new Date(new Date(created.startsAt).getTime() - 3_600_000);
     await expect(bookingsService(db).cancelByClient(user.id, created.id, oneHourBefore)).rejects.toMatchObject({
@@ -142,7 +146,7 @@ describe("cancelling", () => {
   });
 
   it("doesn't let another user cancel your booking", async () => {
-    const created = (await book(client, at("18:00"), julio)).body as Booking;
+    const created = (await book(client, at("18:00"), julio)).booking;
     const { agent: stranger } = await signUp(app, "Extraño");
     expect((await stranger.post(`/api/v1/me/bookings/${created.id}/cancel`).set("Origin", ORIGIN)).status).toBe(404);
   });

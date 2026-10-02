@@ -1,6 +1,16 @@
 import { Router } from "express";
 import { z } from "zod";
-import { AvailabilityQuerySchema, CreateBookingSchema, ManualBookingSchema, StatusChangeSchema } from "@numerito/shared";
+import {
+  AvailabilityQuerySchema,
+  type CreateBookingResponse,
+  CreateBookingSchema,
+  ManualBookingSchema,
+  PaymentReturnSchema,
+  StatusChangeSchema,
+} from "@numerito/shared";
+import { env } from "../../config/env.js";
+import type { PaymentProvider } from "../../lib/payments/index.js";
+import { paymentsService } from "../payments/service.js";
 import type { Db } from "../../db/client.js";
 import { AppError } from "../../lib/errors.js";
 import { currentUser, requireAuth } from "../../middleware/requireAuth.js";
@@ -12,13 +22,28 @@ import { bookingsService } from "./service.js";
 const RangeQuerySchema = z.object({ from: z.iso.datetime({ offset: true }), to: z.iso.datetime({ offset: true }) });
 
 /** Client side: book, list and cancel your own bookings. */
-export function clientBookingsRouter(db: Db) {
+export function clientBookingsRouter(db: Db, provider: PaymentProvider) {
   const router = Router();
   const service = bookingsService(db);
+  const pay = paymentsService(db, provider, env.WEB_ORIGIN);
 
   router.post("/bookings", requireAuth, validateBody(CreateBookingSchema), async (req, res) => {
     const user = currentUser(req);
-    res.status(201).json(await service.createOnline(user.id, user.name, user.email, req.body));
+    const booking = await service.createOnline(user.id, user.name, user.email, req.body);
+    const checkoutUrl = booking.status === "pending_payment" ? await pay.startCheckout(booking) : null;
+    const body: CreateBookingResponse = { booking, checkoutUrl };
+    res.status(201).json(body);
+  });
+
+  /** A new checkout link for a hold that's still valid (the client closed the payment page). */
+  router.post("/me/bookings/:bookingId/checkout", requireAuth, async (req, res) => {
+    const booking = (await service.listForUser(currentUser(req).id)).find((b) => b.id === req.params.bookingId);
+    if (!booking) throw new AppError(404, "NOT_FOUND", "Turno no encontrado");
+    res.json({ checkoutUrl: await pay.startCheckout(booking) });
+  });
+
+  router.post("/me/bookings/:bookingId/payment-return", requireAuth, validateBody(PaymentReturnSchema), async (req, res) => {
+    res.json(await pay.handleReturn(currentUser(req).id, String(req.params.bookingId), req.body.paymentId));
   });
 
   router.get("/me/bookings", requireAuth, async (req, res) => {

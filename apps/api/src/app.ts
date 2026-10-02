@@ -7,10 +7,12 @@ import { auth } from "./auth/index.js";
 import { env } from "./config/env.js";
 import { db as defaultDb, type Db } from "./db/client.js";
 import { logger } from "./lib/logger.js";
+import { type PaymentProvider, createPaymentProvider } from "./lib/payments/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { businessAvailabilityRouter, businessBookingsRouter, clientBookingsRouter } from "./modules/bookings/routes.js";
 import { businessesRouter } from "./modules/businesses/routes.js";
 import { type DbCheck, healthRouter } from "./modules/health/routes.js";
+import { webhooksRouter } from "./modules/payments/routes.js";
 import { publicRouter } from "./modules/public/routes.js";
 import { schedulesRouter } from "./modules/schedules/routes.js";
 import { servicesRouter } from "./modules/services/routes.js";
@@ -19,9 +21,10 @@ import { staffRouter } from "./modules/staff/routes.js";
 export interface AppDeps {
   checkDb: DbCheck;
   db?: Db;
+  paymentProvider?: PaymentProvider;
 }
 
-export function createApp({ checkDb, db = defaultDb }: AppDeps) {
+export function createApp({ checkDb, db = defaultDb, paymentProvider = createPaymentProvider() }: AppDeps) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -44,7 +47,8 @@ export function createApp({ checkDb, db = defaultDb }: AppDeps) {
   app.use("/api/v1/businesses/:businessId", schedulesRouter(db));
   app.use("/api/v1/businesses/:businessId", businessAvailabilityRouter(db));
   app.use("/api/v1/public", publicRouter(db));
-  app.use("/api/v1", clientBookingsRouter(db));
+  app.use("/api/v1", clientBookingsRouter(db, paymentProvider));
+  app.use("/api/v1/webhooks", webhooksRouter(db, paymentProvider));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
