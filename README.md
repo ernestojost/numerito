@@ -2,7 +2,7 @@
 
 Plataforma de turnos online para negocios locales: reservas 24/7, seña con Mercado Pago, recordatorios automáticos y agenda para el negocio.
 
-> Estado: **Fase 0** — esqueleto del monorepo, API con health check, landing y CI.
+> Estado: **Fase 1** — landing, cuentas (email y Google) y alta de la barbería. Próximo: servicios, barberos y horarios.
 
 ## Stack
 
@@ -11,7 +11,7 @@ Plataforma de turnos online para negocios locales: reservas 24/7, seña con Merc
 | Frontend | Next.js (App Router), React, Tailwind CSS, shadcn/ui |
 | API | Express 5, TypeScript, zod |
 | Base de datos | PostgreSQL 16, Drizzle ORM |
-| Auth | Better Auth *(fase 1)* |
+| Auth | Better Auth (organizaciones = barberías) |
 | Pagos | Mercado Pago *(fase 4)* |
 | Jobs y notificaciones | Inngest, Resend *(fase 5)* |
 | Tests | Vitest, Supertest, Playwright |
