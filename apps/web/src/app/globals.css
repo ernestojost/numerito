@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @theme inline {
-  /* Turnia palette */
+  /* Numerito palette */
   --color-paper: #f7f3ea;
   --color-ticket: #fffdf7;
   --color-ink: #17171a;

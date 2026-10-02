@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
-import type { ApiError } from "@turnia/shared";
+import type { ApiError } from "@numerito/shared";
 import { AppError } from "../lib/errors.js";
 
 export const notFoundHandler: RequestHandler = (_req, res) => {

@@ -11,7 +11,7 @@ export function HowItWorks() {
         </h2>
         <ol className="mt-10 grid gap-4 lg:mt-12 lg:grid-cols-3 lg:gap-6">
           <Step n="01" title="Compartes tu link">
-            Pones <b className="font-ticket">turnia.app/b/don-julio</b> en tu bio de Instagram o lo mandas por WhatsApp.
+            Pones <b className="font-ticket">numerito.app/b/don-julio</b> en tu bio de Instagram o lo mandas por WhatsApp.
             Es tu página de turnos, abierta 24 h.
             <TicketRule />
             <span className="text-[13px] text-muted-ink">link de ejemplo</span>

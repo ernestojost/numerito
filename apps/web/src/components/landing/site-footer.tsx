@@ -23,7 +23,7 @@ export function SiteFooter() {
         </nav>
         <div className="flex items-center gap-5">
           <span className="text-[13px] text-muted-ink">Hecho para barberías y peluquerías de Latinoamérica.</span>
-          <Barcode value="TURNIA" className="hidden text-[34px] lg:block" />
+          <Barcode value="NUMERITO" className="hidden text-[34px] lg:block" />
         </div>
       </div>
     </footer>

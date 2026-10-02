@@ -4,7 +4,7 @@ type Tear = "both" | "bottom" | "top" | "none";
 
 const TEAR: Record<Tear, string> = { both: "tear", bottom: "tear-b", top: "tear-t", none: "" };
 
-/** Thermal-paper ticket. Every booking in Turnia is drawn as one. */
+/** Thermal-paper ticket. Every booking in Numerito is drawn as one. */
 export function Ticket({
   tear = "both",
   as: Tag = "div",

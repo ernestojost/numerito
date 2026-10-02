@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { HealthResponse } from "@turnia/shared";
+import type { HealthResponse } from "@numerito/shared";
 
 export type DbCheck = () => Promise<boolean>;
 

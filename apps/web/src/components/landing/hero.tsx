@@ -49,7 +49,7 @@ export function Hero() {
           <b>ESTADO: CONFIRMADO</b>
           <br />
           Recordatorio: 24 h antes
-          <Barcode value="TURNIA1530" className="mt-2 text-center text-4xl lg:text-[44px]" />
+          <Barcode value="NUMERITO1530" className="mt-2 text-center text-4xl lg:text-[44px]" />
         </Ticket>
         </div>
         <Ticket className="animate-print-late absolute top-[380px] right-0 w-[160px] rotate-[7deg] px-3.5 py-3 text-[13px] lg:top-[230px] lg:w-[220px] lg:rotate-6 lg:px-[18px] lg:py-4 lg:text-[14.5px]">

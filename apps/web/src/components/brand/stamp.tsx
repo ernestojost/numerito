@@ -1,4 +1,4 @@
-import type { BookingStatus } from "@turnia/shared";
+import type { BookingStatus } from "@numerito/shared";
 import { cn } from "@/lib/utils";
 
 export type StampKind = BookingStatus | "slot_taken" | "payment_rejected";
