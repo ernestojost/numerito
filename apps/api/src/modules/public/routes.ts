@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import { type PublicBusiness, SlugSchema } from "@numerito/shared";
+import { type Availability, AvailabilityQuerySchema, type PublicBusiness, SlugSchema } from "@numerito/shared";
 import type { Db } from "../../db/client.js";
 import { businesses, organization } from "../../db/schema/index.js";
-import { notFound } from "../../lib/errors.js";
+import { effectiveDeposit } from "../../lib/deposit.js";
+import { AppError, notFound } from "../../lib/errors.js";
+import { computeAvailability } from "../availability/service.js";
 import { schedulesService } from "../schedules/service.js";
 import { servicesService } from "../services/service.js";
 import { staffService } from "../staff/service.js";
@@ -58,18 +60,23 @@ export function publicRouter(db: Db) {
     res.set("Cache-Control", "no-store").json(body);
   });
 
+  router.get("/businesses/:slug/availability", async (req, res) => {
+    const query = AvailabilityQuerySchema.safeParse(req.query);
+    if (!query.success) throw new AppError(400, "VALIDATION_ERROR", "Indica serviceId y date (AAAA-MM-DD)");
+
+    const [business] = await db
+      .select({ id: organization.id, timezone: businesses.timezone })
+      .from(organization)
+      .innerJoin(businesses, eq(businesses.id, organization.id))
+      .where(eq(organization.slug, String(req.params.slug)))
+      .limit(1);
+    if (!business) throw notFound("Barbería no encontrada");
+
+    const { slots } = await computeAvailability(db, { businessId: business.id, ...query.data });
+    const body: Availability = { date: query.data.date, timezone: business.timezone, slots };
+    res.set("Cache-Control", "no-store").json(body);
+  });
+
   return router;
 }
 
-/** The deposit the client pays for a service: its own, else the business rule. */
-export function effectiveDeposit(
-  priceCents: number,
-  serviceDeposit: number | null,
-  type: "none" | "fixed" | "percent",
-  value: number,
-) {
-  if (serviceDeposit !== null) return Math.min(serviceDeposit, priceCents);
-  if (type === "none") return 0;
-  if (type === "percent") return Math.round((priceCents * value) / 100);
-  return Math.min(value, priceCents);
-}

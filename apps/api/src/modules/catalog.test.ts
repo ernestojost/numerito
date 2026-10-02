@@ -5,7 +5,7 @@ import { createApp } from "../app.js";
 import { db, sql } from "../db/client.js";
 import { member } from "../db/schema/index.js";
 import { type Agent, ORIGIN, createBusiness, signUp } from "../test/helpers.js";
-import { effectiveDeposit } from "./public/routes.js";
+import { effectiveDeposit } from "../lib/deposit.js";
 
 const app = createApp({ checkDb: async () => true });
 
